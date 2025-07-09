@@ -1,6 +1,6 @@
 {
   "name": "pomodoko",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
   "type": "module",
   "scripts": {
@@ -16,6 +16,7 @@
     "@fontsource/poppins": "^5.2.6",
     "@tailwindcss/vite": "^4.1.11",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-notification": "^2.3.0",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-sql": "^2.3.0",
     "@tauri-apps/plugin-store": "^2.3.0",

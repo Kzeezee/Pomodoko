@@ -15,6 +15,11 @@
     POMODORO_DEFAULT,
     SHORT_REST_DEFAULT,
   } from "../util/util";
+  import {
+    isPermissionGranted,
+    requestPermission,
+    sendNotification,
+  } from "@tauri-apps/plugin-notification";
   import SettingsIcon from "../components/icons/Settings_Icon.svelte";
   import PauseIcon from "../components/icons/Pause_Icon.svelte";
   import PlayIcon from "../components/icons/Play_Icon.svelte";
@@ -50,6 +55,14 @@
 
     // Since Pomodoro is the first state, set it to user's preferred time
     time = pomodoroResult?.value ?? POMODORO_DEFAULT;
+
+    // Notification permissions
+    let permissionGranted = await isPermissionGranted();
+    // If not we need to request it
+    if (!permissionGranted) {
+      const permission = await requestPermission();
+      permissionGranted = permission === "granted";
+    }
   });
 
   function updateTime() {
@@ -57,7 +70,7 @@
 
     // If time reaches 0, change state
     if (time <= 0) {
-      goNextState();
+      goNextState(false);
     }
   }
 
@@ -70,19 +83,26 @@
     }
   }
 
-  function goNextState() {
+  function goNextState(skip: boolean) {
     let nextState = determineNextState();
+    let msg = "";
     switch (nextState) {
       case Types.STATE.POMODORO:
         set++;
         time = userPreferencesState.pomodoro_time;
+        msg = "Time to focus! Lock in!";
         break;
       case Types.STATE.SHORT_REST:
         time = userPreferencesState.short_rest_time;
+        msg = "Time for a short break! Take a breather!";
         break;
       case Types.STATE.LONG_REST:
         time = userPreferencesState.long_rest_time;
+        msg = "Time for a long break! Recharge with some tea or coffee!";
         break;
+    }
+    if (!skip) {
+      sendNotification({ title: "Pomodoko", body: msg });
     }
     cycle.paused = true;
     timer.pause();
@@ -177,7 +197,12 @@
         <PauseIcon />
       {/if}
     </button>
-    <button onclick={goNextState} class="hover:cursor-pointer">
+    <button
+      onclick={() => {
+        goNextState(true);
+      }}
+      class="hover:cursor-pointer"
+    >
       <SkipForwardIcon />
     </button>
   </div>
