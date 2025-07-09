@@ -1,0 +1,7 @@
+@import "tailwindcss";
+/* In your app.css or app.postcss */
+@import '@fontsource/poppins';
+
+body {
+  font-family: "Poppins", sans-serif;
+}
