@@ -9,12 +9,13 @@
   import { onMount } from "svelte";
   import { userPreferencesState } from "../util/state.svelte";
   import {
+    DB_NAME,
     formatMinutes,
     formatSeconds,
     LONG_REST_DEFAULT,
     POMODORO_DEFAULT,
     SHORT_REST_DEFAULT,
-  } from "../util/util";
+  } from "../util/util.svelte";
   import {
     isPermissionGranted,
     requestPermission,
@@ -26,6 +27,12 @@
   import SkipForwardIcon from "../components/icons/Skip_Forward_Icon.svelte";
   import Settings from "../components/Settings.svelte";
   import ResetConfirmation from "../components/Reset_Confirmation.svelte";
+  import AddIcon from "../components/icons/Add_Icon.svelte";
+  import HelpIcon from "../components/icons/Help_Icon.svelte";
+  import { tasksObject } from "../util/util.svelte";
+  import type { Task } from "../util/types";
+  import { axis, bounds, BoundsFrom, draggable, events, position } from '@neodrag/svelte';
+  import TrashIcon from "../components/icons/Trash_Icon.svelte";
 
   let cycle: Cycle = $state({
     state: Types.STATE.POMODORO,
@@ -35,6 +42,8 @@
   let time = $state(POMODORO_DEFAULT);
   let showSettings = $state(false);
   let showResetConfirmation = $state(false);
+
+  let dragState: any = $state(null);
 
   // Constant will never change
   const timer = new TaskTimer(1000);
@@ -63,7 +72,43 @@
       const permission = await requestPermission();
       permissionGranted = permission === "granted";
     }
+
+    // Tasks-related
+    const db = await Database.load(DB_NAME);
+    updateTasks(db);
   });
+
+  async function addNewTask() {
+    const db = await Database.load(DB_NAME);
+    const result = await db.execute(
+      "INSERT into tasks (name, completed) VALUES ($1, $2)",
+      ["Your new task", false]
+    );
+    updateTasks(db);
+  }
+
+  async function updateTask(id: number, name: String, completed: boolean) {
+    const db = await Database.load(DB_NAME);
+    const result = await db.execute("UPDATE tasks SET name=$1, completed=$2 WHERE id = $3;", [name, completed, id]);
+    updateTasks(db);
+  }
+
+  async function deleteTask(id: number) {
+    const db = await Database.load(DB_NAME);
+    const result = await db.execute("DELETE FROM tasks WHERE id = $1;", [id]);
+    updateTasks(db);
+  }
+
+  async function updateTasks(db: Database) {
+    let queryTasks = await db.select("SELECT * FROM tasks LIMIT 10;");
+    let taskArray = queryTasks as Task[];
+    taskArray.forEach((e) => {
+      e.position = {x: 0, y:0};
+      e.completed = e.completed === "true"; // Have to do this due to SQLite storing boolean as string
+    })
+    tasksObject.tasks = taskArray;
+    console.log(tasksObject.tasks);
+  }
 
   function updateTime() {
     time -= 1;
@@ -162,11 +207,11 @@
   // //   event.preventDefault();
   // //   // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
   // //   greetMsg = await invoke("greet", { name });
-  // // }
+  // // }s
 </script>
 
 <main
-  class="text-white flex flex-col text-center h-dvh p-4 overflow-hidden"
+  class="text-white flex flex-col text-center h-dvh p-4 overflow-x-hidden"
   class:bg-red-400={cycle.state === Types.STATE.POMODORO}
   class:bg-blue-400={cycle.state === Types.STATE.SHORT_REST}
   class:bg-cyan-700={cycle.state === Types.STATE.LONG_REST}
@@ -177,10 +222,7 @@
   <div class="timer text-8xl font-semibold items-center mt-2 mb-6">
     <span>{formatMinutes(time)}:{formatSeconds(time)}</span>
   </div>
-  <hr class="border-2 mx-12 my-4" />
-  <div
-    class="controls mt-2 self-center flex w-full items-center justify-center"
-  >
+  <div class="controls self-center flex w-full items-center justify-center">
     <button
       onclick={() => {
         showSettings = !showSettings;
@@ -206,6 +248,98 @@
       <SkipForwardIcon />
     </button>
   </div>
+  <hr class="border-2 mx-12 my-8" />
+  <div class="tasks mb-4 flex flex-col items-center">
+    <h1 class="text-xl mb-2 flex">
+      Tasks
+      <div class="self-center relative pl-1">
+        <div class="absolute min-w-40 opacity-0 hover:opacity-100 text-sm z-20">
+          <div class="relative -top-4 bg-gray-900/60 p-1 rounded-sm left-6">
+            <p class="">Drag the tasks to the <br /> left to delete it</p>
+          </div>
+        </div>
+        <HelpIcon />
+      </div>
+    </h1>
+    <div class="task-container flex flex-col w-4/5">
+      {#each tasksObject.tasks as task (task.id)}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="flex w-full bg-black/20 m-1 p-4 text-left max-h-14 hover:cursor-grab"
+          {@attach draggable([
+            bounds(BoundsFrom.viewport({left: -200})),
+            axis("x"),
+            position({current: task.position}),
+            events({
+              onDragStart: (data) => {
+                dragState = { taskId: task.id, position:data.offset.x};
+              },
+              onDrag: (data) => {
+                dragState = {
+                  taskId: task.id,
+                  position: data.offset.x,
+                }
+              },
+              onDragEnd: (data) => {
+                if (data.offset.x < -150) {
+                  // Delete the task here
+                  deleteTask(task.id);
+                } else {
+                  task.position = {x: 0, y:0};
+                }
+                dragState = null;
+              }
+            })
+          ])}
+        >
+          {#if dragState?.taskId === task.id}
+            <div class="absolute flex top-0 left-0 w-full h-full z-10 bg-gray-100 justify-center items-center"
+            style="opacity: {Math.min(Math.max(dragState?.position / -150, 0), 1)};">
+              <TrashIcon/>
+            </div>
+          {/if}
+          <div
+            class="task-name line-clamp-1 mr-4 cancel"
+            class:crossed={task.completed === true}
+          >
+            <input
+              class="field-sizing-content min-w-4"
+              value={task.name}
+              onchange={(element) => {
+                let input = element.currentTarget as HTMLInputElement;
+                if (input.value.length <= 0) {
+                  input.value = "Your new task";
+                }
+                task.name = input.value;
+                updateTask(task.id, task.name, task.completed);
+              }}
+            />
+          </div>
+          <div class="spacing grow"></div>
+          <div class="completed min-w-1/12 flex items-center cancel">
+            <input
+              class="checkbox flex"
+              type="checkbox"
+              name="completed"
+              checked={task.completed === true}
+              oninput={() => {
+                task.completed = !task.completed;
+                updateTask(task.id, task.name, task.completed);
+              }}
+            />
+          </div>
+        </div>
+      {/each}
+    </div>
+    <div class="add-task flex w-4/5 items-center justify-center pt-2">
+      <button
+        onclick={addNewTask}
+        class="btn bg-transparent p-0 w-12 border-0 border-white rounded-md cursor-pointer hover:bg-white shadow-none"
+      >
+        <AddIcon />
+      </button>
+    </div>
+  </div>
   {#if showSettings}
     <div class="overlay absolute top-0 left-0 h-full w-full bg-black/50"></div>
     <Settings {determinePreferencesChangeForCurrentState} bind:showSettings />
@@ -215,3 +349,31 @@
     <ResetConfirmation {updateTimeFromPreferences} bind:showResetConfirmation />
   {/if}
 </main>
+
+<style>
+  .task-name {
+    position: relative;
+    display: inline-block;
+    transition: color 0.3s;
+  }
+  .task-name::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    height: 2px;
+    background: currentColor;
+    width: 0;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+  }
+  .task-name.crossed::after {
+    width: 100%;
+  }
+  .task-name.crossed {
+    color: #aaa;
+  }
+  .task-name.crossed::after {
+    text-decoration: line-through;
+  }
+</style>

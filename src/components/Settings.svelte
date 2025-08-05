@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Store } from "@tauri-apps/plugin-store";
   import { userPreferencesState } from "../util/state.svelte";
-  import { formatMinutes, formatSeconds } from "../util/util";
+  import { formatMinutes, formatSeconds } from "../util/util.svelte";
 
   export let showSettings: boolean;
   export let determinePreferencesChangeForCurrentState: any;
@@ -48,7 +48,7 @@
       Pomodoro Time
       <div class="">
         <input
-          class="text-center"
+          class="input max-w-14 validator text-center"
           name="pomodoro_min"
           value={formatMinutes(userPreferencesState.pomodoro_time)}
           type="number"
@@ -58,7 +58,7 @@
         />
         :
         <input
-          class="text-center"
+          class="input max-w-14 validator text-center"
           name="pomodoro_sec"
           value={formatSeconds(userPreferencesState.pomodoro_time)}
           type="number"
@@ -72,7 +72,7 @@
       Short Rest Time
       <div class="">
         <input
-          class="text-center"
+          class="input max-w-14 validator text-center"
           name="short_rest_min"
           value={formatMinutes(userPreferencesState.short_rest_time)}
           type="number"
@@ -82,7 +82,7 @@
         />
         :
         <input
-          class="text-center"
+          class="input max-w-14 validator text-center"
           name="short_rest_sec"
           value={formatSeconds(userPreferencesState.short_rest_time)}
           type="number"
@@ -96,7 +96,7 @@
       Long Rest Time
       <div class="">
         <input
-          class="text-center"
+          class="input max-w-14 validator text-center"
           name="long_rest_min"
           value={formatMinutes(userPreferencesState.long_rest_time)}
           type="number"
@@ -106,7 +106,7 @@
         />
         :
         <input
-          class="text-center"
+          class="input max-w-14 validator text-center"
           name="long_rest_sec"
           value={formatSeconds(userPreferencesState.long_rest_time)}
           type="number"
@@ -116,7 +116,7 @@
         />
       </div>
     </label>
-    <button class="border rounded-md p-2 mt-4 hover:cursor-pointer" type="submit">Save</button
+    <button class="border rounded-md p-2 mt-4 hover:cursor-pointer hover:bg-white hover:text-gray-950/80" type="submit">Save</button
     >
   </form>
 </div>

@@ -1,12 +1,6 @@
 use serde_json::json;
-// use tauri_plugin_sql::{Migration, MigrationKind};
+use tauri_plugin_sql::{Migration, MigrationKind};
 use tauri_plugin_store::StoreExt;
-
-// let migration = Migration {
-//     version: 1,
-//     description: "Create initial tables",
-//     sql: "CREATE TABLE IF NOT EXISTS preferences(id INTEGER"
-// };
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -16,9 +10,16 @@ fn greet(name: &str) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let migration = vec![Migration {
+        version: 1,
+        description: "create_initial_tables",
+        sql: "CREATE TABLE tasks (id INTEGER PRIMARY KEY, name TEXT, completed BOOLEAN);",
+        kind: MigrationKind::Up,
+    }];
+
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_sql::Builder::new().build())
+        .plugin(tauri_plugin_sql::Builder::default().add_migrations("sqlite:pomodoko.db", migration).build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .setup(|app| {

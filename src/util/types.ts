@@ -19,3 +19,10 @@ export type UserPreferences = {
     short_rest_time: number,
     long_rest_time: number,
 }
+
+export type Task = {
+    id: number,
+    name: String,
+    completed: boolean,
+    position: {x: number, y:number}
+}

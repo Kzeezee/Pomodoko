@@ -1,5 +1,5 @@
 @import "tailwindcss";
-/* In your app.css or app.postcss */
+@plugin "daisyui";
 @import '@fontsource/poppins';
 
 body {
