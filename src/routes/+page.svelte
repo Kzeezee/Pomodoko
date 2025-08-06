@@ -34,6 +34,8 @@
     axis,
     bounds,
     BoundsFrom,
+    ControlFrom,
+    controls,
     draggable,
     events,
     position,
@@ -267,6 +269,7 @@
             bounds(BoundsFrom.viewport({ left: -200 })),
             axis("x"),
             position({ current: task.position }),
+            controls({ block: ControlFrom.selector('.cancel') }),
             events({
               onDragStart: (data) => {
                 dragState = { taskId: task.id, position: data.offset.x };
@@ -297,7 +300,7 @@
                 1
               )};"
             >
-              <TrashIcon />
+              <TrashIcon bind:cycleState={cycle.state} />
             </div>
           {/if}
           <div
@@ -305,7 +308,7 @@
             class:crossed={task.completed === true}
           >
             <input
-              class="field-sizing-content min-w-4"
+              class="field-sizing-content min-w-4 cancel"
               value={task.name}
               onchange={(e) => {
                 let input = e.currentTarget as HTMLInputElement;
@@ -338,7 +341,7 @@
         onclick={addNewTask}
         class="btn bg-transparent p-0 w-12 border-0 border-white rounded-md cursor-pointer hover:bg-white shadow-none"
       >
-        <AddIcon />
+        <AddIcon bind:cycleState={cycle.state} />
       </button>
     </div>
   </div>
