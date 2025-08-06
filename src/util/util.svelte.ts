@@ -1,10 +1,13 @@
+import Database from "@tauri-apps/plugin-sql";
 import type { Task } from "./types";
 
 // Database
 export const DB_NAME = "sqlite:pomodoko.db";
+export const DB = await Database.load(DB_NAME);
 
 // Tasks
 export const tasksObject = $state({ tasks: [] as Task[] });
+export const DEFAULT_TASK_NAME = "Your new task";
 
 // Timer related
 export const POMODORO_DEFAULT = 25*60;

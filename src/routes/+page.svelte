@@ -1,15 +1,13 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
-  import Pause from "../components/icons/Pause_Icon.svelte";
   import * as Types from "../util/types";
   import type { Cycle } from "../util/types";
   import { TaskTimer } from "tasktimer";
-  import Database from "@tauri-apps/plugin-sql";
   import { Store } from "@tauri-apps/plugin-store";
   import { onMount } from "svelte";
   import { userPreferencesState } from "../util/state.svelte";
   import {
-    DB_NAME,
+    DB,
+    DEFAULT_TASK_NAME,
     formatMinutes,
     formatSeconds,
     LONG_REST_DEFAULT,
@@ -29,10 +27,17 @@
   import ResetConfirmation from "../components/Reset_Confirmation.svelte";
   import AddIcon from "../components/icons/Add_Icon.svelte";
   import HelpIcon from "../components/icons/Help_Icon.svelte";
+  import TrashIcon from "../components/icons/Trash_Icon.svelte";
   import { tasksObject } from "../util/util.svelte";
   import type { Task } from "../util/types";
-  import { axis, bounds, BoundsFrom, draggable, events, position } from '@neodrag/svelte';
-  import TrashIcon from "../components/icons/Trash_Icon.svelte";
+  import {
+    axis,
+    bounds,
+    BoundsFrom,
+    draggable,
+    events,
+    position,
+  } from "@neodrag/svelte";
 
   let cycle: Cycle = $state({
     state: Types.STATE.POMODORO,
@@ -74,40 +79,39 @@
     }
 
     // Tasks-related
-    const db = await Database.load(DB_NAME);
-    updateTasks(db);
+    updateTasksState();
   });
 
   async function addNewTask() {
-    const db = await Database.load(DB_NAME);
-    const result = await db.execute(
+    await DB.execute(
       "INSERT into tasks (name, completed) VALUES ($1, $2)",
       ["Your new task", false]
     );
-    updateTasks(db);
+    updateTasksState();
   }
 
   async function updateTask(id: number, name: String, completed: boolean) {
-    const db = await Database.load(DB_NAME);
-    const result = await db.execute("UPDATE tasks SET name=$1, completed=$2 WHERE id = $3;", [name, completed, id]);
-    updateTasks(db);
+    await DB.execute("UPDATE tasks SET name=$1, completed=$2 WHERE id = $3;", [
+      name,
+      completed,
+      id,
+    ]);
+    updateTasksState();
   }
 
   async function deleteTask(id: number) {
-    const db = await Database.load(DB_NAME);
-    const result = await db.execute("DELETE FROM tasks WHERE id = $1;", [id]);
-    updateTasks(db);
+    await DB.execute("DELETE FROM tasks WHERE id = $1;", [id]);
+    updateTasksState();
   }
 
-  async function updateTasks(db: Database) {
-    let queryTasks = await db.select("SELECT * FROM tasks LIMIT 10;");
+  async function updateTasksState() {
+    let queryTasks = await DB.select("SELECT * FROM tasks LIMIT 10;");
     let taskArray = queryTasks as Task[];
     taskArray.forEach((e) => {
-      e.position = {x: 0, y:0};
+      e.position = { x: 0, y: 0 };
       e.completed = e.completed === "true"; // Have to do this due to SQLite storing boolean as string
-    })
+    });
     tasksObject.tasks = taskArray;
-    console.log(tasksObject.tasks);
   }
 
   function updateTime() {
@@ -202,12 +206,6 @@
         break;
     }
   }
-
-  // // async function greet(event: Event) {
-  // //   event.preventDefault();
-  // //   // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-  // //   greetMsg = await invoke("greet", { name });
-  // // }s
 </script>
 
 <main
@@ -263,39 +261,43 @@
     </h1>
     <div class="task-container flex flex-col w-4/5">
       {#each tasksObject.tasks as task (task.id)}
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="flex w-full bg-black/20 m-1 p-4 text-left max-h-14 hover:cursor-grab"
           {@attach draggable([
-            bounds(BoundsFrom.viewport({left: -200})),
+            bounds(BoundsFrom.viewport({ left: -200 })),
             axis("x"),
-            position({current: task.position}),
+            position({ current: task.position }),
             events({
               onDragStart: (data) => {
-                dragState = { taskId: task.id, position:data.offset.x};
+                dragState = { taskId: task.id, position: data.offset.x };
               },
               onDrag: (data) => {
                 dragState = {
                   taskId: task.id,
                   position: data.offset.x,
-                }
+                };
               },
               onDragEnd: (data) => {
                 if (data.offset.x < -150) {
                   // Delete the task here
                   deleteTask(task.id);
                 } else {
-                  task.position = {x: 0, y:0};
+                  task.position = { x: 0, y: 0 };
                 }
                 dragState = null;
-              }
-            })
+              },
+            }),
           ])}
         >
           {#if dragState?.taskId === task.id}
-            <div class="absolute flex top-0 left-0 w-full h-full z-10 bg-gray-100 justify-center items-center"
-            style="opacity: {Math.min(Math.max(dragState?.position / -150, 0), 1)};">
-              <TrashIcon/>
+            <div
+              class="absolute flex top-0 left-0 w-full h-full z-10 bg-gray-100 justify-center items-center"
+              style="opacity: {Math.min(
+                Math.max(dragState?.position / -150, 0),
+                1
+              )};"
+            >
+              <TrashIcon />
             </div>
           {/if}
           <div
@@ -305,10 +307,10 @@
             <input
               class="field-sizing-content min-w-4"
               value={task.name}
-              onchange={(element) => {
-                let input = element.currentTarget as HTMLInputElement;
+              onchange={(e) => {
+                let input = e.currentTarget as HTMLInputElement;
                 if (input.value.length <= 0) {
-                  input.value = "Your new task";
+                  input.value = DEFAULT_TASK_NAME;
                 }
                 task.name = input.value;
                 updateTask(task.id, task.name, task.completed);
