@@ -11,6 +11,7 @@
     formatMinutes,
     formatSeconds,
     LONG_REST_DEFAULT,
+    NOTIFICATION_SUCCESS,
     POMODORO_DEFAULT,
     SHORT_REST_DEFAULT,
   } from "../util/util.svelte";
@@ -154,6 +155,7 @@
     }
     if (!skip) {
       sendNotification({ title: "Pomodoko", body: msg });
+      new Audio(NOTIFICATION_SUCCESS).play();
     }
     cycle.paused = true;
     timer.pause();
@@ -253,11 +255,13 @@
     <h1 class="text-xl mb-2 flex">
       Tasks
       <div class="self-center relative pl-1">
-        <div class="absolute min-w-40 opacity-0 hover:opacity-100 text-sm z-20">
-          <div class="relative -top-4 bg-gray-900/60 p-1 rounded-sm left-6">
-            <p class="">Drag the tasks to the <br /> left to delete it</p>
+        {#if !showSettings}
+          <div class="absolute min-w-40 opacity-0 hover:opacity-100 text-sm z-20">
+            <div class="relative -top-4 bg-gray-900/60 p-1 rounded-sm left-6">
+              <p class="">Drag the tasks to the <br /> left to delete it</p>
+            </div>
           </div>
-        </div>
+        {/if}
         <HelpIcon />
       </div>
     </h1>
@@ -347,7 +351,7 @@
   </div>
   {#if showSettings}
     <div class="overlay absolute top-0 left-0 h-full w-full bg-black/50"></div>
-    <Settings {determinePreferencesChangeForCurrentState} bind:showSettings />
+    <Settings bind:determinePreferencesChangeForCurrentState={determinePreferencesChangeForCurrentState} bind:showSettings={showSettings} />
   {/if}
   {#if showResetConfirmation}
     <div class="overlay absolute top-0 left-0 h-full w-full bg-black/50"></div>

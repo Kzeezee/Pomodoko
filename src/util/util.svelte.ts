@@ -5,6 +5,9 @@ import type { Task } from "./types";
 export const DB_NAME = "sqlite:pomodoko.db";
 export const DB = await Database.load(DB_NAME);
 
+// Sound file paths
+export const NOTIFICATION_SUCCESS = "complete.mp3";
+
 // Tasks
 export const tasksObject = $state({ tasks: [] as Task[] });
 export const DEFAULT_TASK_NAME = "Your new task";

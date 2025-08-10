@@ -2,9 +2,17 @@
   import { Store } from "@tauri-apps/plugin-store";
   import { userPreferencesState } from "../util/state.svelte";
   import { formatMinutes, formatSeconds } from "../util/util.svelte";
+  import { onMount } from "svelte";
+  import { disable, enable } from "@tauri-apps/plugin-autostart";
 
-  export let showSettings: boolean;
-  export let determinePreferencesChangeForCurrentState: any;
+  let { showSettings = $bindable(), determinePreferencesChangeForCurrentState = $bindable() } = $props();
+
+  let startupChecked: boolean | undefined = $state(false);
+
+  onMount(async () => {
+    const store = await Store.load("preferences.json");
+    startupChecked = await store.get("startup_enabled");
+  });
 
   function formatInput(element: Event) {
     const input = element.currentTarget as HTMLInputElement;
@@ -26,19 +34,27 @@
     userPreferencesState.pomodoro_time = newPomodoroTime;
     userPreferencesState.short_rest_time = newShortRestTime;
     userPreferencesState.long_rest_time = newLongRestTime;
+    userPreferencesState.startup_enabled = startupChecked ?? false;
     // Save to store
     const store = await Store.load("preferences.json");
     await store.set("pomodoro", {value:newPomodoroTime});
     await store.set("short_rest", {value:newShortRestTime});
     await store.set("long_rest", {value:newLongRestTime});
+    await store.set("startup_enabled", startupChecked);
     await store.save();
+
+    if (userPreferencesState.startup_enabled) {
+      await enable();
+    } else {
+      disable();
+    }
 
     showSettings = false;
     determinePreferencesChangeForCurrentState();
   }
 </script>
 
-<div class="absolute bg-gray-950/80 top-1/2 left-1/2 -translate-1/2 rounded-xl p-2">
+<div class="absolute z-20 bg-gray-950/80 top-1/2 left-1/2 -translate-1/2 rounded-xl p-2">
   <button onclick={() => {showSettings = !showSettings}} class="absolute right-0 top-0 mt-2 mr-4 hover:cursor-pointer">
     X
   </button>
@@ -114,6 +130,12 @@
           min="0"
           oninput={(element) => formatInput(element)}
         />
+      </div>
+    </label>
+    <label class="grid grid-cols-2 pt-3 pb-2">
+      Run on startup
+      <div class="flex items-center justify-center">
+        <input class="checkbox" type="checkbox" checked={startupChecked} oninput={() => {startupChecked = !startupChecked; console.log(startupChecked)}}/>
       </div>
     </label>
     <button class="border rounded-md p-2 mt-4 hover:cursor-pointer hover:bg-white hover:text-gray-950/80" type="submit">Save</button
