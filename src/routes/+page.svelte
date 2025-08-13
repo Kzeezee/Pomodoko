@@ -6,7 +6,7 @@
   import { onMount } from "svelte";
   import { userPreferencesState } from "../util/state.svelte";
   import {
-    DB,
+  DB_NAME,
     DEFAULT_TASK_NAME,
     formatMinutes,
     formatSeconds,
@@ -41,6 +41,7 @@
     events,
     position,
   } from "@neodrag/svelte";
+  import Database from "@tauri-apps/plugin-sql";
 
   let cycle: Cycle = $state({
     state: Types.STATE.POMODORO,
@@ -52,6 +53,8 @@
   let showResetConfirmation = $state(false);
 
   let dragState: any = $state(null);
+
+  let DB: Database;
 
   // Constant will never change
   const timer = new TaskTimer(1000);
@@ -80,6 +83,9 @@
       const permission = await requestPermission();
       permissionGranted = permission === "granted";
     }
+
+    // Load database
+    DB = await Database.load(DB_NAME);
 
     // Tasks-related
     updateTasksState();

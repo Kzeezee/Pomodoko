@@ -3,7 +3,6 @@ import type { Task } from "./types";
 
 // Database
 export const DB_NAME = "sqlite:pomodoko.db";
-export const DB = await Database.load(DB_NAME);
 
 // Sound file paths
 export const NOTIFICATION_SUCCESS = "complete.mp3";
