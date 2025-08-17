@@ -1,6 +1,9 @@
 @import "tailwindcss";
-@plugin "daisyui";
 @import '@fontsource/poppins';
+
+@plugin "daisyui" {
+  themes: dark --default;
+}
 
 body {
   font-family: "Poppins", sans-serif;
