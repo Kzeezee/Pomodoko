@@ -4,7 +4,7 @@
 </p>
 
 # Pomodoko
-Pomodoko is your typical Pomodoro counter application with a task system built-in. It is a cross-platform application (Windows, Mac, Linux) and is built using Tauri and Svelte. The project was started as a way to experiment and develop something light in Tauri to get used to cross-platform app development with web frameworks on the frontend.
+Pomodoko is your typical Pomodoro counter application with a task system built-in. It is a cross-platform desktop application and is built using Tauri and Svelte. The project was started as a way to experiment and develop something light in Tauri to get used to cross-platform app development with web frameworks on the frontend.
 
 # Features
 The full list of features include:
